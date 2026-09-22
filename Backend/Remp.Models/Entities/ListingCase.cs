@@ -43,5 +43,11 @@ public class ListingCase
 
     public required string UserId { get; set; }
 
+    public ApplicationUser? User { get; set; }
+
     public ICollection<CaseContact> CaseContacts { get; set; } = new List<CaseContact>();
+
+    public ICollection<MediaAsset>  MediaAssets { get; set; } = new List<MediaAsset>();
+
+    public ICollection<AgentListingCase> AgentListingCases { get; set; } = new List<AgentListingCase>();
 }
