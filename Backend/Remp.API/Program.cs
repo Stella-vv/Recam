@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Remp.DataAccess.Data;
 using Remp.API.Services.Email;
 using System.ComponentModel;
+using Remp.API.Middlewares;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +24,8 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
