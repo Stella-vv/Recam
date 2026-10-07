@@ -2,6 +2,7 @@ namespace Remp.DataAccess.Data;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Remp.Models.Entities;
+using Microsoft.AspNetCore.Identity;
 
 public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 {
@@ -21,6 +22,26 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<IdentityRole>().HasData(
+            new IdentityRole
+            {
+                Id = "0406610f-7f58-47bb-8549-48aefd18d37b",
+                Name = "photographyCompany",
+                NormalizedName = "PHOTOGRAPHYCOMPANY",
+                ConcurrencyStamp = "8b09c6b8-89c3-4161-a363-425a4adf1e6e"
+            },
+
+            new IdentityRole
+            {
+                Id = "83d84d57-c75c-434d-af94-2c3a6e868162",
+                Name = "user",
+                NormalizedName = "USER",
+                ConcurrencyStamp = "c11c055e-c153-4135-a0d9-4fa3f7e079fe"
+            }
+
+        );
+ 
+
         modelBuilder.Entity<CaseContact>().HasKey(contact => contact.ContactId);
         modelBuilder.Entity<AgentListingCase>().HasKey(link => new {link.AgentId, link.ListingCaseId});
         modelBuilder.Entity<AgentPhotographyCompany>().HasKey(link => new {link.AgentId, link.PhotographyCompanyId});
