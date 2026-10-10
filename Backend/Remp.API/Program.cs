@@ -63,7 +63,7 @@ options.MapInboundClaims = false;
 });
 builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("MongoDbSettings"));
 builder.Services.AddSingleton<ILoginAttemptRepository, MongoLoginAttemptRepository>();
-
+builder.Services.AddScoped<IRegisterAttemptRepository, MongoRegisterAttemptRepository>();
 
 var app = builder.Build();
 
