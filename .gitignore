@@ -482,3 +482,6 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+!Backend/Remp.Models/Logs/
+!Backend/Remp.Models/Logs/*.cs
