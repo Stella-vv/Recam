@@ -6,4 +6,5 @@ public class MongoDbSettings
     public string DatabaseName {get; set; } = "";
     public string LoginAttemptsCollectionName {get; set; } = "";
     public string RegisterAttemptsCollectionName {get; set; } = "";
+    public string CaseHistoryCollectionName {get; set; } = "CaseHistory";
 }
