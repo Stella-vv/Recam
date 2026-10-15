@@ -139,5 +139,56 @@ public class ListingsController : ControllerBase
         return Ok(ApiResponse<GetListingCasesResponse>.Ok(response));
     
     }
+
+    [HttpPut("{id:int}")]
+    [Authorize(Roles = "photographyCompany")]
+    public async Task<IActionResult> Update([FromBody] UpdateListingCaseRequest request, int id)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<UpdateListingCaseResponse>.Fail("Invalid user identity."));
+        }
+
+        ListingCase? listingCase = await _context.ListingCases.FirstOrDefaultAsync(listingCase => (listingCase.Id == id && listingCase.IsDeleted == false && listingCase.UserId == userId));
+        if(listingCase == null)
+        {
+            return NotFound(ApiResponse<UpdateListingCaseResponse>.Fail("Listing case not found."));
+        }
+
+        listingCase.Street = request.Street.Trim();
+        listingCase.City = request.City.Trim();
+        listingCase.State = request.State.Trim();
+        listingCase.Postcode= request.Postcode;
+        listingCase.Bedrooms = request.Bedrooms;
+        listingCase.Bathrooms = request.Bathrooms;
+        listingCase.Garages = request.Garages;
+        listingCase.FloorArea = request.FloorArea;
+        listingCase.PropertyType = request.PropertyType;
+        listingCase.SaleCategory = request.SaleCategory;
+        await _context.SaveChangesAsync();
+
+        CaseHistoryLog log = new CaseHistoryLog()
+        {
+            ListingCaseId = listingCase.Id,
+            UserId = userId,
+            Action = "Updated",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        try{
+            await _caseHistoryRepository.AddAsync(log);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save case update history for listing {ListingCaseId}.", listingCase.Id);
+        }
+
+        UpdateListingCaseResponse response = new UpdateListingCaseResponse()
+        {
+            Id = listingCase.Id
+        };
+        return Ok(ApiResponse<UpdateListingCaseResponse>.Ok(response, "Listing case updated successfully."));
+    }
  
 }
