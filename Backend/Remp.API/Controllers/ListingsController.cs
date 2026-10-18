@@ -236,5 +236,85 @@ public class ListingsController : ControllerBase
         return NoContent();
     }
 
+    [HttpGet("{id:int}")]
+    public async Task<IActionResult> GetListingCaseDetails(int id)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<GetListingCaseDetailsResponse>.Fail("Invalid user identity."));
+        }
+
+        var query = _context.ListingCases.AsNoTracking().Where( q => q.Id == id && q.IsDeleted == false);
+        if (User.IsInRole("photographyCompany"))
+        {
+            query = query.Where( q => q.UserId == userId);
+        }
+        else if (User.IsInRole("user"))
+        {
+            query = query.Where(q => q.AgentListingCases.Any(assignment => assignment.AgentId == userId));
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        ListingCase? listingCase = await query.Include(q => q.MediaAssets.Where( m => m.IsDeleted == false))
+                                              .Include(q => q.AgentListingCases)
+                                              .ThenInclude(q => q.Agent)
+                                              .ThenInclude(q => q!.User)
+                                              .FirstOrDefaultAsync();
+        if(listingCase == null)
+        {
+            return NotFound(ApiResponse<GetListingCaseDetailsResponse>.Fail("Listing case not found."));
+        }
+
+        GetListingCaseDetailsResponse response = new GetListingCaseDetailsResponse()
+        {
+            Id = listingCase.Id,
+            Title = listingCase.Title,
+            Description = listingCase.Description,
+            Street = listingCase.Street,
+            City = listingCase.City,
+            State = listingCase.State,
+            Postcode = listingCase.Postcode,
+            Bedrooms = listingCase.Bedrooms,
+            Bathrooms = listingCase.Bathrooms,
+            Garages = listingCase.Garages,
+            FloorArea = listingCase.FloorArea,
+            Price = listingCase.Price,
+            Longitude = listingCase.Longitude,
+            Latitude = listingCase.Latitude,
+            CreatedAt = listingCase.CreatedAt,
+            PropertyType = listingCase.PropertyType,
+            SaleCategory = listingCase.SaleCategory,
+            ListingCaseStatus = listingCase.ListingCaseStatus
+        };
+
+        response.MediaAssets = listingCase.MediaAssets.OrderBy(media => media.Id).Select(media => new ListingCaseMediaResponse()
+                                                                                 {
+                                                                                        Id = media.Id,
+                                                                                        MediaType = media.MediaType,
+                                                                                        MediaUrl = media.MediaUrl,
+                                                                                        UploadedAt = media.UploadedAt,
+                                                                                        IsSelect = media.IsSelect,
+                                                                                        IsHero = media.IsHero
+                                                                                 }).ToList();
+        response.Agents = listingCase.AgentListingCases.Select(assignment => assignment.Agent)
+                                                       .Where(agent => agent != null && agent.User != null && agent.User.IsDeleted == false).OrderBy(agent => agent!.Id)
+                                                       .Select(agent => new ListingCaseAgentResponse()
+                                                       {
+                                                            Id = agent!.Id,
+                                                            AgentFirstName = agent!.AgentFirstName,
+                                                            AgentLastName = agent!.AgentLastName,
+                                                            AvatarUrl = agent!.AvatarUrl,
+                                                            CompanyName = agent!.CompanyName,
+                                                            Email = agent!.User!.Email,
+                                                            PhoneNumber = agent!.User!.PhoneNumber
+                                                       }).ToList();
+
+        return Ok(ApiResponse<GetListingCaseDetailsResponse>.Ok(response));
+    }
+
  
 }
