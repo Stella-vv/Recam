@@ -10,6 +10,7 @@ using Remp.Models.Entities;
 using Remp.Models.Enums;
 using Remp.Models.Logs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization.Infrastructure;
 
 namespace Remp.API.Controllers;
 
@@ -190,5 +191,50 @@ public class ListingsController : ControllerBase
         };
         return Ok(ApiResponse<UpdateListingCaseResponse>.Ok(response, "Listing case updated successfully."));
     }
+
+    [HttpDelete("{id:int}")]
+    [Authorize(Roles = "photographyCompany")]
+
+    public async Task<IActionResult> Delete(int id)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<object>.Fail("Invalid user identity."));
+        }
+
+        ListingCase? listingCase = await _context.ListingCases.FirstOrDefaultAsync( listingCase => (listingCase.Id == id && listingCase.IsDeleted == false && listingCase.UserId == userId));
+        if(listingCase == null)
+        {
+            return NotFound(ApiResponse<object>.Fail("Listing case not found."));
+        }
+
+        listingCase.IsDeleted = true;
+        List<MediaAsset> mediaAssets = await _context.MediaAssets.Where(mediaAssets =>(mediaAssets.ListingCaseId == id && mediaAssets.IsDeleted == false)).ToListAsync();
+        foreach(MediaAsset mediaAsset in mediaAssets)
+        {
+            mediaAsset.IsDeleted = true;
+        }
+        await _context.SaveChangesAsync();
+
+        CaseHistoryLog log = new CaseHistoryLog()
+        {
+            ListingCaseId = listingCase.Id,
+            UserId = userId,
+            Action = "Deleted",
+            CreatedAt = DateTime.UtcNow
+        };
+
+        try{
+            await _caseHistoryRepository.AddAsync(log);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save case deletion history for listing {ListingCaseId}.", listingCase.Id);
+        }
+
+        return NoContent();
+    }
+
  
 }
