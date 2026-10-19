@@ -4,5 +4,6 @@ public enum ListingCaseStatus
 {
     Created = 0,
     Pending = 1,
-    Delivered = 2
+    Delivered = 2,
+    InReview = 3
 }

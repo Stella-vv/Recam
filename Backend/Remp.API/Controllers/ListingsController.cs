@@ -11,6 +11,7 @@ using Remp.Models.Enums;
 using Remp.Models.Logs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
+using Microsoft.Net.Http.Headers;
 
 namespace Remp.API.Controllers;
 
@@ -314,6 +315,64 @@ public class ListingsController : ControllerBase
                                                        }).ToList();
 
         return Ok(ApiResponse<GetListingCaseDetailsResponse>.Ok(response));
+    }
+
+    [HttpPatch("{id:int}/status")]
+    [Authorize(Roles = "photographyCompany")]
+    public async Task<IActionResult> ChangeStatus([FromBody] ChangeListingCaseStatusRequest request, int id)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<ChangeListingCaseStatusResponse>.Fail("Invalid user identity."));
+        }
+
+        ListingCase? listingCase = await _context.ListingCases.FirstOrDefaultAsync( listingCase => listingCase.Id == id && listingCase.IsDeleted == false && listingCase.UserId == userId);
+        if (listingCase == null)
+        {
+            return NotFound(ApiResponse<ChangeListingCaseStatusResponse>.Fail("Listing case not found."));
+        }
+
+        ListingCaseStatus oldStatus = listingCase.ListingCaseStatus;
+        ListingCaseStatus newStatus = request.ListingCaseStatus!.Value;
+        bool isValidTransition = ((listingCase.ListingCaseStatus == ListingCaseStatus.Created && request.ListingCaseStatus == ListingCaseStatus.Pending)
+                                 || (listingCase.ListingCaseStatus == ListingCaseStatus.Pending && request.ListingCaseStatus == ListingCaseStatus.InReview)
+                                 || (listingCase.ListingCaseStatus == ListingCaseStatus.InReview && request.ListingCaseStatus == ListingCaseStatus.Delivered));
+
+        if (!isValidTransition)
+        {
+            return BadRequest(ApiResponse<ChangeListingCaseStatusResponse>.Fail("Invalid listing case status transition."));
+        }
+
+        listingCase.ListingCaseStatus = newStatus;
+        await _context.SaveChangesAsync();
+
+        CaseHistoryLog log = new CaseHistoryLog()
+        {
+            ListingCaseId = listingCase.Id,
+            UserId = userId,
+            Action = "StatusChanged",
+            CreatedAt = DateTime.UtcNow,
+            OldStatus = oldStatus,
+            NewStatus = newStatus
+        };
+
+        try
+        {
+            await _caseHistoryRepository.AddAsync(log);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to save case status change history for listing {ListingCaseId}.", listingCase.Id);
+        }
+
+        ChangeListingCaseStatusResponse response = new ChangeListingCaseStatusResponse(){
+            Id = listingCase.Id,
+            ListingCaseStatus = listingCase.ListingCaseStatus
+        };
+
+        return Ok(ApiResponse<ChangeListingCaseStatusResponse>.Ok(response, "Listing case status changed successfully."));
+
     }
 
  
