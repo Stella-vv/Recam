@@ -12,6 +12,7 @@ using Remp.Models.Logs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization.Infrastructure;
 using Microsoft.Net.Http.Headers;
+using System.Linq.Expressions;
 
 namespace Remp.API.Controllers;
 
@@ -373,6 +374,56 @@ public class ListingsController : ControllerBase
 
         return Ok(ApiResponse<ChangeListingCaseStatusResponse>.Ok(response, "Listing case status changed successfully."));
 
+    }
+
+    [HttpGet("{id:int}/media")]
+    public async Task<IActionResult> GetListingCaseMedia(int id)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<GetListingCaseMediaResponse>.Fail("Invalid user identity."));
+        }
+
+        var query = _context.ListingCases.AsNoTracking().Where(listingCase => listingCase.Id == id && listingCase.IsDeleted == false);
+        if(User.IsInRole("photographyCompany"))
+        {
+            query = query.Where(listingCase => listingCase.UserId == userId);
+        }
+        else if(User.IsInRole("user"))
+        {
+            query = query.Where(listingCase => listingCase.AgentListingCases.Any(assignment => assignment.AgentId == userId));
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        ListingCase? listingCase = await query.Include(q => q.MediaAssets.Where(media =>media.IsDeleted == false)).FirstOrDefaultAsync();
+        if(listingCase == null)
+        {
+            return NotFound(ApiResponse<GetListingCaseMediaResponse>.Fail("Listing case not found."));
+        }
+
+        var mediaAssets = listingCase.MediaAssets.OrderBy(media => media.Id).Select(media => new ListingCaseMediaResponse()
+                                                                                             {
+                                                                                                Id = media.Id,
+                                                                                                MediaType = media.MediaType,
+                                                                                                MediaUrl = media.MediaUrl,
+                                                                                                UploadedAt = media.UploadedAt,
+                                                                                                IsSelect = media.IsSelect,
+                                                                                                IsHero = media.IsHero
+                                                                                             }).ToList();
+
+        GetListingCaseMediaResponse response = new GetListingCaseMediaResponse()
+        {
+            Photos = mediaAssets.Where(media => media.MediaType == MediaType.Photo).ToList(),
+            Videos = mediaAssets.Where(media => media.MediaType == MediaType.Video).ToList(),
+            FloorPlans = mediaAssets.Where(media => media.MediaType == MediaType.FloorPlan).ToList(),
+            VrTours = mediaAssets.Where(media => media.MediaType == MediaType.VrTour).ToList()
+        };
+
+        return Ok(ApiResponse<GetListingCaseMediaResponse>.Ok(response));
     }
 
  
