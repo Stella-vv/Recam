@@ -4,12 +4,13 @@ using Remp.DataAccess.Data;
 using Remp.Models.Requests;
 using Microsoft.EntityFrameworkCore;
 using Remp.Models.Responses;
+using System.Security.Claims;
 
 namespace Remp.API.Controllers;
 
 [ApiController]
 [Route("api/users")]
-[Authorize(Roles = "photographyCompany")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
@@ -18,6 +19,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize(Roles = "photographyCompany")]
     public async Task<IActionResult> GetUsers ([FromQuery] GetUsersRequest request)
     {
         var query = _context.Users.Where(user => !user.IsDeleted);
@@ -48,6 +50,37 @@ public class UsersController : ControllerBase
 
         };
         return Ok(ApiResponse<GetUsersResponse>.Ok(response));
+    }
+
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUser()
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<GetCurrentUserResponse>.Fail("Invalid user identity."));
+        }
+
+        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync( user => user.Id == userId && user.IsDeleted == false);
+        if(user == null)
+        {
+            return Unauthorized(ApiResponse<GetCurrentUserResponse>.Fail("User not found or deleted."));
+        }
+
+        List<string> roles = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).Distinct().ToList();
+
+        List<int> assignedListingIds = await _context.ListingCases.AsNoTracking().Where( listingCase => listingCase.IsDeleted == false
+                                                                                 && listingCase.AgentListingCases.Any(assignment => assignment.AgentId == userId))
+                                                                                 .OrderBy(listingCase => listingCase.Id).Select(listingCase => listingCase.Id).ToListAsync();
+
+        GetCurrentUserResponse response = new GetCurrentUserResponse()
+        {
+            UserId = userId,
+            Roles = roles,
+            AssignedListingIds = assignedListingIds
+        };
+
+        return Ok(ApiResponse<GetCurrentUserResponse>.Ok(response));
 
     }
 }
