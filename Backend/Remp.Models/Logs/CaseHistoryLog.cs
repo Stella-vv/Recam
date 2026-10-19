@@ -1,3 +1,5 @@
+using Remp.Models.Enums;
+
 namespace Remp.Models.Logs;
 
 public class CaseHistoryLog
@@ -6,4 +8,6 @@ public class CaseHistoryLog
     public required string UserId { get; set; }
     public required string Action { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public ListingCaseStatus? OldStatus { get; set; }
+    public ListingCaseStatus? NewStatus { get; set; }
 }
