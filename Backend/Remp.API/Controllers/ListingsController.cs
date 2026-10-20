@@ -426,5 +426,55 @@ public class ListingsController : ControllerBase
         return Ok(ApiResponse<GetListingCaseMediaResponse>.Ok(response));
     }
 
+    [HttpGet("{id:int}/contacts")]
+    public async Task<IActionResult> GetListingCaseContacts(int id)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<GetListingCaseContactsResponse>.Fail("Invalid user identity."));
+        }
+
+        var query = _context.ListingCases.AsNoTracking().Where( listingCase => listingCase.Id == id && listingCase.IsDeleted == false);
+
+        if (User.IsInRole("photographyCompany"))
+        {
+            query = query.Where(listingCase => listingCase.UserId == userId);
+        }
+        else if (User.IsInRole("user"))
+        {
+            query = query.Where(listingCase => listingCase.AgentListingCases.Any(assignment => assignment.AgentId == userId));
+        }
+        else
+        {
+            return Forbid();
+        }
+
+        bool listingCaseExists = await query.AnyAsync();
+        if (!listingCaseExists)
+        {
+            return NotFound(ApiResponse<GetListingCaseContactsResponse>.Fail("Listing case not found."));
+        }
+
+        var contacts = await _context.CaseContacts.AsNoTracking().Where(contact => contact.ListingCaseId == id).OrderBy(contact => contact.ContactId)
+                                                           .Select(contact => new CaseContactResponse()
+                                                           {
+                                                                ContactId = contact.ContactId,
+                                                                FirstName = contact.FirstName,
+                                                                LastName = contact.LastName,
+                                                                CompanyName = contact.CompanyName,
+                                                                ProfileUrl = contact.ProfileUrl,
+                                                                Email = contact.Email,
+                                                                PhoneNumber = contact.PhoneNumber
+                                                           }).ToListAsync();
+
+        GetListingCaseContactsResponse response = new GetListingCaseContactsResponse(){
+            Contacts = contacts,
+        };
+
+        return Ok(ApiResponse<GetListingCaseContactsResponse>.Ok(response));
+
+    }
+
  
 }
