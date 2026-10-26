@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Remp.DataAccess.Data;
 using Remp.Models.Requests;
-using Microsoft.EntityFrameworkCore;
 using Remp.Models.Responses;
 using System.Security.Claims;
 using Remp.API.Services.Users;
@@ -14,10 +12,8 @@ namespace Remp.API.Controllers;
 [Authorize]
 public class UsersController : ControllerBase
 {
-    private readonly ApplicationDbContext _context;
     private readonly IUserService _userService;
-    public UsersController(ApplicationDbContext context, IUserService userService){
-        _context = context;
+    public UsersController(IUserService userService){
         _userService = userService;
     }
 
@@ -38,24 +34,14 @@ public class UsersController : ControllerBase
             return Unauthorized(ApiResponse<GetCurrentUserResponse>.Fail("Invalid user identity."));
         }
 
-        var user = await _context.Users.AsNoTracking().FirstOrDefaultAsync( user => user.Id == userId && user.IsDeleted == false);
-        if(user == null)
+        List<string> roles = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).Distinct().ToList();
+
+        GetCurrentUserResponse? response = await _userService.GetCurrentUserAsync(userId, roles);
+
+        if(response == null)
         {
             return Unauthorized(ApiResponse<GetCurrentUserResponse>.Fail("User not found or deleted."));
         }
-
-        List<string> roles = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).Distinct().ToList();
-
-        List<int> assignedListingIds = await _context.ListingCases.AsNoTracking().Where( listingCase => listingCase.IsDeleted == false
-                                                                                 && listingCase.AgentListingCases.Any(assignment => assignment.AgentId == userId))
-                                                                                 .OrderBy(listingCase => listingCase.Id).Select(listingCase => listingCase.Id).ToListAsync();
-
-        GetCurrentUserResponse response = new GetCurrentUserResponse()
-        {
-            UserId = userId,
-            Roles = roles,
-            AssignedListingIds = assignedListingIds
-        };
 
         return Ok(ApiResponse<GetCurrentUserResponse>.Ok(response));
 

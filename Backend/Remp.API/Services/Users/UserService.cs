@@ -34,5 +34,26 @@ public class UserService : IUserService
         return response;
     }
 
+    public async Task<GetCurrentUserResponse?> GetCurrentUserAsync(string userId, List<string> roles)
+    {
+        bool userExists = await _userRepository.ActiveUserExistsAsync(userId);
+        if (!userExists)
+        {
+            return null;
+        }
+
+        List<int> assignedListingIds = await _userRepository.GetAssignedListingIdsAsync(userId);
+
+        GetCurrentUserResponse response = new GetCurrentUserResponse()
+        {
+            UserId = userId,
+            Roles = roles,
+            AssignedListingIds = assignedListingIds
+        };
+
+        return response;
+
+    }
+
 
 }

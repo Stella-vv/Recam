@@ -36,4 +36,16 @@ public class UserRepository : IUserRepository
         return await responseQuery.ToListAsync();
     }
 
+    public async Task<bool> ActiveUserExistsAsync(string userId)
+    {
+        return await _context.Users.AnyAsync(user => user.Id == userId && user.IsDeleted == false);
+    }
+
+    public async Task<List<int>> GetAssignedListingIdsAsync(string userId)
+    {
+        return await _context.ListingCases.AsNoTracking().Where(listingCase => listingCase.IsDeleted == false
+                                                                && listingCase.AgentListingCases.Any(assignment => assignment.AgentId == userId))
+                                                                .OrderBy(listingCase => listingCase.Id).Select(listingCase => listingCase.Id).ToListAsync();
+    }
+
 }
