@@ -1,7 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Remp.DataAccess.Data;
 using Remp.API.Services.Email;
-using System.ComponentModel;
 using Remp.API.Middlewares;
 using Remp.API.Services.Auth;
 using Microsoft.AspNetCore.Identity;
@@ -11,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 using Remp.DataAccess.Settings;
 using Remp.DataAccess.Repositories;
+using Remp.API.Services.Users;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -65,6 +65,8 @@ builder.Services.Configure<MongoDbSettings>(builder.Configuration.GetSection("Mo
 builder.Services.AddSingleton<ILoginAttemptRepository, MongoLoginAttemptRepository>();
 builder.Services.AddScoped<IRegisterAttemptRepository, MongoRegisterAttemptRepository>();
 builder.Services.AddScoped<ICaseHistoryRepository, MongoCaseHistoryRepository>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 var app = builder.Build();
 
