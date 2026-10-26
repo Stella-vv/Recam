@@ -5,6 +5,7 @@ using Remp.Models.Requests;
 using Microsoft.EntityFrameworkCore;
 using Remp.Models.Responses;
 using System.Security.Claims;
+using Remp.API.Services.Users;
 
 namespace Remp.API.Controllers;
 
@@ -14,41 +15,17 @@ namespace Remp.API.Controllers;
 public class UsersController : ControllerBase
 {
     private readonly ApplicationDbContext _context;
-    public UsersController(ApplicationDbContext context){
+    private readonly IUserService _userService;
+    public UsersController(ApplicationDbContext context, IUserService userService){
         _context = context;
+        _userService = userService;
     }
 
     [HttpGet]
     [Authorize(Roles = "photographyCompany")]
     public async Task<IActionResult> GetUsers ([FromQuery] GetUsersRequest request)
     {
-        var query = _context.Users.Where(user => !user.IsDeleted);
-        int totalCount = await query.CountAsync();
-        var orderedQuery = query.OrderBy(user => user.Id);
-        long skipCount = (long)(request.PageNumber - 1) * request.PageSize;
-        List<UserResponse> users = new List<UserResponse>();
-        if ( skipCount < totalCount)
-        {
-            var pageQuery = orderedQuery.Skip((int)skipCount).Take(request.PageSize);
-            var responseQuery = pageQuery.Select( user => new UserResponse
-            {
-                UserId = user.Id,
-                Email = user.Email ?? string.Empty,
-                AgentFirstName = user.Agent != null ? user.Agent.AgentFirstName : string.Empty,
-                AgentLastName = user.Agent != null ? user.Agent.AgentLastName : string.Empty,
-                CompanyName = user.Agent != null ? user.Agent.CompanyName : null
-            } );
-            users = await responseQuery.ToListAsync();
-        }
-
-        GetUsersResponse response = new GetUsersResponse()
-        {
-            Users = users,
-            TotalCount = totalCount,
-            PageNumber = request.PageNumber,
-            PageSize = request.PageSize
-
-        };
+        GetUsersResponse response = await _userService.GetUsersAsync(request);
         return Ok(ApiResponse<GetUsersResponse>.Ok(response));
     }
 
