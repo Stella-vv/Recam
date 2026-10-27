@@ -11,6 +11,8 @@ using System.Security.Claims;
 using Remp.DataAccess.Settings;
 using Remp.DataAccess.Repositories;
 using Remp.API.Services.Users;
+using Remp.API.Services.PhotographyCompanies;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,6 +69,8 @@ builder.Services.AddScoped<IRegisterAttemptRepository, MongoRegisterAttemptRepos
 builder.Services.AddScoped<ICaseHistoryRepository, MongoCaseHistoryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IPhotographyCompanyService, PhotographyCompanyService>();
+builder.Services.AddScoped<IPhotographyCompanyRepository, PhotographyCompanyRepository>();
 
 var app = builder.Build();
 
