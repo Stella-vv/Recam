@@ -1,12 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using Remp.DataAccess.Data;
-using Remp.DataAccess.Repositories;
 using Remp.Models.Responses;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore;
-using Remp.Models.Entities;
-using Remp.Models.Logs;
+using Remp.API.Services.Media;
 
 namespace Remp.API.Controllers;
 
@@ -16,14 +12,10 @@ namespace Remp.API.Controllers;
 [Authorize(Roles = "photographyCompany")]
 public class MediaController : ControllerBase
 {
-    private readonly ApplicationDbContext	_context;
-    private readonly ICaseHistoryRepository	_caseHistoryRepository;
-    private readonly ILogger<MediaController>	_logger;
+    private readonly IMediaService _mediaService;
 
-    public MediaController(ApplicationDbContext	context, ICaseHistoryRepository	caseHistoryRepository, ILogger<MediaController>	logger){
-        _context = context;
-        _caseHistoryRepository = caseHistoryRepository;
-        _logger = logger;
+    public MediaController(IMediaService mediaService){
+        _mediaService = mediaService;
     }
 
     [HttpDelete("{id:int}")]
@@ -35,31 +27,10 @@ public class MediaController : ControllerBase
             return Unauthorized(ApiResponse<object>.Fail("Invalid user identity."));
         }
 
-        MediaAsset? mediaAsset = await _context.MediaAssets.FirstOrDefaultAsync( media => media.Id == id && media.IsDeleted == false &&
-                                                                           media.ListingCase != null && media.ListingCase.IsDeleted == false && media.ListingCase.UserId == userId);
-        if(mediaAsset == null)
+        bool deleted = await _mediaService.DeleteAsync(id, userId);
+        if(deleted == false)
         {
             return NotFound(ApiResponse<object>.Fail("Media file not found."));
-        }
-
-        _context.MediaAssets.Remove(mediaAsset);
-        await _context.SaveChangesAsync();
-
-        CaseHistoryLog log = new CaseHistoryLog()
-        {
-            ListingCaseId	= mediaAsset.ListingCaseId,
-            UserId = userId,
-            Action = "MediaDeleted",
-            CreatedAt	= DateTime.UtcNow
-        };
-
-        try
-        {
-            await _caseHistoryRepository.AddAsync(log);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to save media deletion history for media {MediaId}.", mediaAsset.Id);
         }
 
         return NoContent();
