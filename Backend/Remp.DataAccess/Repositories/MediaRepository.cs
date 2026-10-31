@@ -25,4 +25,9 @@ public class MediaRepository : IMediaRepository
         _context.MediaAssets.Remove(mediaAsset);
         await _context.SaveChangesAsync();
     }
+
+    public async Task<List<MediaAsset>> GetByListingCaseIdAsync(int listingCaseId)
+    {
+        return await _context.MediaAssets.Where(media => media.ListingCaseId == listingCaseId && media.IsDeleted == false).ToListAsync();
+    }
 }
