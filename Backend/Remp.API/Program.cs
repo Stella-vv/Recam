@@ -13,6 +13,7 @@ using Remp.DataAccess.Repositories;
 using Remp.API.Services.Users;
 using Remp.API.Services.PhotographyCompanies;
 using Remp.API.Services.Media;
+using Remp.API.Services.Listings;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -74,6 +75,9 @@ builder.Services.AddScoped<IPhotographyCompanyService, PhotographyCompanyService
 builder.Services.AddScoped<IPhotographyCompanyRepository, PhotographyCompanyRepository>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 builder.Services.AddScoped<IMediaService, MediaService>();
+builder.Services.AddScoped<IListingCaseRepository, ListingCaseRepository>();
+builder.Services.AddScoped<IListingCaseService, ListingCaseService>();
+builder.Services.AddScoped<ICaseContactRepository, CaseContactRepository>();
 
 var app = builder.Build();
 
