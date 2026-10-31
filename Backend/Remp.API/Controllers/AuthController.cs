@@ -1,6 +1,4 @@
-using System.Linq.Expressions;
 using Microsoft.AspNetCore.Mvc;
-namespace Remp.API.Controllers;
 using Microsoft.AspNetCore.Identity;
 using Remp.Models.Entities;
 using Remp.API.Services.Auth;
@@ -10,72 +8,36 @@ using Microsoft.AspNetCore.Authorization;
 using Remp.DataAccess.Repositories;
 using Remp.Models.Logs;
 using Remp.DataAccess.Data;
-using Org.BouncyCastle.Security;
+
+namespace Remp.API.Controllers;
 
 [ApiController]
 [Route("api/auth")]
 public class AuthController: ControllerBase
 {
     private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IJwtTokenService _jwtTokenService;
-    private readonly ILoginAttemptRepository _loginAttemptRepository;
     private readonly IRegisterAttemptRepository _registerAttemptRepository;
     private readonly ApplicationDbContext _context;
     private readonly ILogger<AuthController> _logger;
+    private readonly IAuthService _authService;
 
-    public AuthController(UserManager<ApplicationUser> userManager, IJwtTokenService jwtTokenService,
-                          ILoginAttemptRepository loginAttemptRepository, IRegisterAttemptRepository registerAttemptRepository,
-                           ApplicationDbContext context, ILogger<AuthController> logger){
+    public AuthController(UserManager<ApplicationUser> userManager, IRegisterAttemptRepository registerAttemptRepository,
+                           ApplicationDbContext context, ILogger<AuthController> logger, IAuthService authService){
         _userManager = userManager;
-        _jwtTokenService = jwtTokenService;
-        _loginAttemptRepository = loginAttemptRepository;
         _registerAttemptRepository = registerAttemptRepository;
         _context = context;
         _logger = logger;
+        _authService = authService;
     }
 
     [HttpPost("login")]
     public async Task<IActionResult> Login(LoginRequest request)
     {
-        ApplicationUser? user = await _userManager.FindByEmailAsync(request.Email);
-        if ( user == null || user.IsDeleted)
+        LoginResponse? response = await _authService.LoginAsync(request);
+        if(response == null)
         {
-            LoginAttemptLog log = new LoginAttemptLog()
-            {
-              Email = request.Email,
-              FailureReason = "Invalid email or deleted user",
-              IsSuccessful = false,
-            };
-            await _loginAttemptRepository.AddAsync(log);
             return Unauthorized(ApiResponse<LoginResponse>.Fail("Invalid email or password."));
         }
-
-        bool isPasswordValid = await _userManager.CheckPasswordAsync(user, request.Password);
-        if (!isPasswordValid)
-        {
-            LoginAttemptLog log = new LoginAttemptLog()
-            {
-                Email = request.Email,
-                FailureReason = "InvalidPassword",
-                IsSuccessful = false,
-            };
-            await _loginAttemptRepository.AddAsync(log);
-            return Unauthorized(ApiResponse<LoginResponse>.Fail("Invalid email or password."));
-        }
-
-
-
-        IList<string> roles = await _userManager.GetRolesAsync(user);
-        LoginResponse response = _jwtTokenService.GenerateToken(user, roles);
-        LoginAttemptLog successLog = new LoginAttemptLog()
-        {
-            Email = request.Email,
-            IsSuccessful = true,
-            FailureReason = ""
-        };
-
-        await _loginAttemptRepository.AddAsync(successLog);
-
         return Ok(ApiResponse<LoginResponse>.Ok(response));
     }
 

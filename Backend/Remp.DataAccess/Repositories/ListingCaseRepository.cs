@@ -41,7 +41,6 @@ public class ListingCaseRepository : IListingCaseRepository
         {
             listingCases = await orderedQuery.Skip((int)skipCount).Take(pageSize).ToListAsync();
         }
-
         return (listingCases, totalCount);
     }
 
@@ -104,6 +103,5 @@ public class ListingCaseRepository : IListingCaseRepository
 
         return await query.AnyAsync();
     }
-
 
 }
