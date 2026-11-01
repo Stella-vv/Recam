@@ -79,6 +79,7 @@ builder.Services.AddScoped<IListingCaseRepository, ListingCaseRepository>();
 builder.Services.AddScoped<IListingCaseService, ListingCaseService>();
 builder.Services.AddScoped<ICaseContactRepository, CaseContactRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IRegistrationRepository, RegistrationRepository>();
 
 var app = builder.Build();
 
