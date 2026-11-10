@@ -485,3 +485,10 @@ $RECYCLE.BIN/
 
 !Backend/Remp.Models/Logs/
 !Backend/Remp.Models/Logs/*.cs
+
+# Frontend build output
+dist/
+
+# Local environment overrides
+.env.*
+!.env.example
