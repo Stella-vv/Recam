@@ -105,4 +105,33 @@ public class PhotographyCompaniesController : ControllerBase
         return StatusCode(500, ApiResponse<object>.Fail("Unexpected create-agent result."));
     }
 
+    [HttpGet("agents/search")]
+    public async Task<IActionResult> SearchAgentByEmail([FromQuery] SearchAgentByEmailRequest request)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<object>.Fail("Invalid user identity."));
+        }
+
+        SearchAgentByEmailResult result = await _photographyCompanyService.SearchAgentByEmailAsync(userId, request);
+
+        if(result.Status == SearchAgentByEmailStatus.CompanyNotFound)
+        {
+            return NotFound(ApiResponse<object>.Fail("Photography company not found."));
+        }
+
+        if(result.Status == SearchAgentByEmailStatus.AgentNotFound)
+        {
+            return NotFound(ApiResponse<object>.Fail("Agent not found."));
+        }
+
+        if(result.Status == SearchAgentByEmailStatus.Success)
+        {
+            return Ok(ApiResponse<SearchAgentByEmailResponse>.Ok(result.Data!));
+        }
+
+        return StatusCode(500, ApiResponse<object>.Fail("Unexpected search agent result."));
+    }
+
 }

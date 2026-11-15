@@ -51,4 +51,9 @@ public class PhotographyCompanyRepository : IPhotographyCompanyRepository
         }
     }
 
+    public async Task<Agent?> FindActiveAgentByEmailAsync(string normalizedEmail)
+    {
+        return await _context.Agents.AsNoTracking().Include(agent => agent.User).FirstOrDefaultAsync(agent => agent.User != null && agent.User.IsDeleted == false && agent.User.NormalizedEmail == normalizedEmail);
+    }
+
 }

@@ -323,4 +323,49 @@ public class PhotographyCompanyService : IPhotographyCompanyService
         }
     }
 
+    public async Task<SearchAgentByEmailResult> SearchAgentByEmailAsync(string userId, SearchAgentByEmailRequest request)
+    {
+        bool companyExists = await _photographyCompanyRepository.CompanyExistsAsync(userId);
+        if (!companyExists)
+        {
+            SearchAgentByEmailResult result = new SearchAgentByEmailResult()
+            {
+                Status = SearchAgentByEmailStatus.CompanyNotFound,
+                Data = null
+            };
+            return result;
+        }
+
+        string email = request.Email.Trim();
+        var normalizedEmail = _userManager.NormalizeEmail(email);
+        Agent? agent = await _photographyCompanyRepository.FindActiveAgentByEmailAsync(normalizedEmail);
+        if(agent == null)
+        {
+            SearchAgentByEmailResult result = new SearchAgentByEmailResult()
+            {
+                Status = SearchAgentByEmailStatus.AgentNotFound,
+                Data = null
+            };
+            return result;
+        }
+
+        SearchAgentByEmailResponse response = new SearchAgentByEmailResponse()
+        {
+            AgentId	= agent.Id,
+            Email = agent.User!.Email!,
+            AgentFirstName = agent.AgentFirstName,
+            AgentLastName = agent.AgentLastName,
+            CompanyName = agent.CompanyName,
+            AvatarUrl = agent.AvatarUrl
+        };
+
+        SearchAgentByEmailResult successResult = new SearchAgentByEmailResult()
+        {
+            Status = SearchAgentByEmailStatus.Success,
+            Data = response
+        };
+        return successResult;
+
+    }
+
 }
