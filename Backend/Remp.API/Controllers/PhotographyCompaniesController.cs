@@ -134,4 +134,28 @@ public class PhotographyCompaniesController : ControllerBase
         return StatusCode(500, ApiResponse<object>.Fail("Unexpected search agent result."));
     }
 
+    [HttpGet("agents")]
+    public async Task<IActionResult> GetAgents()
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<object>.Fail("Invalid user identity."));
+        }
+
+        GetPhotographyCompanyAgentsResult result = await _photographyCompanyService.GetAgentsAsync(userId);
+
+        if(result.Status == GetPhotographyCompanyAgentsStatus.CompanyNotFound)
+        {
+            return NotFound(ApiResponse<object>.Fail("Photography company not found."));
+        }
+
+        if(result.Status == GetPhotographyCompanyAgentsStatus.Success)
+        {
+            return Ok(ApiResponse<GetPhotographyCompanyAgentsResponse>.Ok(result.Data!));
+        }
+
+        return StatusCode(500, ApiResponse<object>.Fail("Unexpected get-agents result."));
+    }
+
 }

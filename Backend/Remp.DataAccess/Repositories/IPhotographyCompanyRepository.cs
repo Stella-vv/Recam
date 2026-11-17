@@ -9,5 +9,6 @@ public interface IPhotographyCompanyRepository
     public Task<bool> AgentCompanyRelationExistsAsync(string agentId, string companyId);
     public Task<bool> AddAgentCompanyRelationAsync(string agentId, string companyId);
     public Task<Agent?> FindActiveAgentByEmailAsync(string normalizedEmail);
+    public Task<List<Agent>> GetActiveAgentsByCompanyIdAsync(string companyId);
 
 }

@@ -368,4 +368,42 @@ public class PhotographyCompanyService : IPhotographyCompanyService
 
     }
 
+    public async Task<GetPhotographyCompanyAgentsResult> GetAgentsAsync(string userId)
+    {
+        bool companyExists = await _photographyCompanyRepository.CompanyExistsAsync(userId);
+        if (!companyExists)
+        {
+            GetPhotographyCompanyAgentsResult result = new GetPhotographyCompanyAgentsResult()
+            {
+                Status = GetPhotographyCompanyAgentsStatus.CompanyNotFound,
+                Data = null
+            };
+            return result;
+        }
+
+        List<Agent> agents = await _photographyCompanyRepository.GetActiveAgentsByCompanyIdAsync(userId);
+
+        List<PhotographyCompanyAgentResponse> agentResponses = agents.Select(agent => new PhotographyCompanyAgentResponse(){
+            AgentId	= agent.Id,
+            Email = agent.User!.Email ?? "",
+            AgentFirstName = agent.AgentFirstName,
+            AgentLastName = agent.AgentLastName,
+            CompanyName	= agent.CompanyName,
+            AvatarUrl = agent.AvatarUrl
+        }).ToList();
+
+        GetPhotographyCompanyAgentsResponse response = new GetPhotographyCompanyAgentsResponse()
+        {
+            Agents = agentResponses
+        };
+
+        GetPhotographyCompanyAgentsResult successResult = new GetPhotographyCompanyAgentsResult()
+        {
+            Status = GetPhotographyCompanyAgentsStatus.Success,
+            Data = response
+        };
+        return successResult;
+
+    }
+
 }

@@ -2,6 +2,7 @@ using Remp.DataAccess.Data;
 using Microsoft.EntityFrameworkCore;
 using Remp.Models.Entities;
 using Microsoft.Data.SqlClient;
+using System.Linq.Expressions;
 
 namespace Remp.DataAccess.Repositories;
 
@@ -54,6 +55,13 @@ public class PhotographyCompanyRepository : IPhotographyCompanyRepository
     public async Task<Agent?> FindActiveAgentByEmailAsync(string normalizedEmail)
     {
         return await _context.Agents.AsNoTracking().Include(agent => agent.User).FirstOrDefaultAsync(agent => agent.User != null && agent.User.IsDeleted == false && agent.User.NormalizedEmail == normalizedEmail);
+    }
+
+    public async Task<List<Agent>> GetActiveAgentsByCompanyIdAsync(string companyId)
+    {
+        return await _context.Agents.AsNoTracking().Include(agent => agent.User).Where(agent => agent.User != null && agent.User.IsDeleted == false
+                                                                        && agent.AgentPhotographyCompanies.Any(assignment => assignment.PhotographyCompanyId == companyId))
+                                                                        .OrderBy(agent => agent.AgentFirstName).ThenBy(agent => agent.AgentLastName).ThenBy(agent => agent.Id).ToListAsync();
     }
 
 }
