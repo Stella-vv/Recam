@@ -14,6 +14,7 @@ using Remp.API.Services.Users;
 using Remp.API.Services.PhotographyCompanies;
 using Remp.API.Services.Media;
 using Remp.API.Services.Listings;
+using Remp.Models.Results;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -123,6 +124,22 @@ if (app.Environment.IsDevelopment())
             {
                 string errors = string.Join("; ", roleResult.Errors.Select(error => error.Description));
                 throw new InvalidOperationException("Failed to assign development test user role: "+ errors);
+            }
+        }
+
+        if(testRole == "photographyCompany")
+        {
+            ApplicationDbContext context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            bool companyExists = await context.PhotographyCompanies.AnyAsync(company => company.Id == testUser.Id);
+            if (!companyExists)
+            {
+                PhotographyCompany company = new PhotographyCompany()
+                {
+                    Id = testUser.Id,
+                    PhotographyCompanyName = "Development Test Company"
+                };
+                context.PhotographyCompanies.Add(company);
+                await context.SaveChangesAsync();
             }
         }
     }
