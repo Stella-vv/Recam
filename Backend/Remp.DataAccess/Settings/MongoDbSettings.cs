@@ -8,4 +8,5 @@ public class MongoDbSettings
     public string RegisterAttemptsCollectionName {get; set; } = "";
     public string CaseHistoryCollectionName {get; set; } = "CaseHistory";
     public string CreateAgentLogsCollectionName {get; set; } = "CreateAgentLogs";
+    public string UpdateAccountPasswordLogsCollectionName {get; set; } = "UpdateAccountPasswordLogs";
 }
