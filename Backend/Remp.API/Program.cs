@@ -82,6 +82,7 @@ builder.Services.AddScoped<ICaseContactRepository, CaseContactRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRegistrationRepository, RegistrationRepository>();
 builder.Services.AddScoped<ICreateAgentLogRepository, MongoCreateAgentLogRepository>();
+builder.Services.AddScoped<IUpdateAccountPasswordLogRepository, MongoUpdateAccountPasswordLogRepository>();
 
 var app = builder.Build();
 

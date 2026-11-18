@@ -4,6 +4,8 @@ using Remp.Models.Requests;
 using Remp.Models.Responses;
 using System.Security.Claims;
 using Remp.API.Services.Users;
+using Remp.Models.Results;
+using Remp.Models.Enums;
 
 namespace Remp.API.Controllers;
 
@@ -45,5 +47,38 @@ public class UsersController : ControllerBase
 
         return Ok(ApiResponse<GetCurrentUserResponse>.Ok(response));
 
+    }
+
+    [HttpPut("me/password")]
+    public async Task<IActionResult> UpdateAccountPassword([FromBody] UpdateAccountPasswordRequest request)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<object>.Fail("Invalid user identity."));
+        }
+
+        UpdateAccountPasswordResult result = await _userService.UpdateAccountPasswordAsync(userId, request);
+        if(result.Status == UpdateAccountPasswordStatus.Success)
+        {
+            return NoContent();
+        }
+
+        if(result.Status == UpdateAccountPasswordStatus.UserNotFound)
+        {
+            return Unauthorized(ApiResponse<object>.Fail("User not found or deleted."));
+        }
+
+        if(result.Status == UpdateAccountPasswordStatus.InvalidCurrentPassword)
+        {
+            return BadRequest(ApiResponse<object>.Fail(result.ErrorMessage ?? "Current password is incorrect."));
+        }
+
+        if(result.Status == UpdateAccountPasswordStatus.InvalidNewPassword)
+        {
+            return BadRequest(ApiResponse<object>.Fail(result.ErrorMessage ?? "New password does not meet password requirements."));
+        }
+
+        return StatusCode(500, "Unable to update password. Please try again.");
     }
 }
