@@ -194,4 +194,28 @@ public class ListingsController : ControllerBase
 
         return Ok(ApiResponse<GetListingCaseContactsResponse>.Ok(result.Data!));
     }
+
+    [HttpPost("{id:int}/contacts")]
+    [Authorize(Roles = "user")]
+    public async Task<IActionResult> AddCaseContact(int id, [FromBody] AddCaseContactRequest request)
+    {
+        string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if(string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized(ApiResponse<object>.Fail("Invalid user identity."));
+        }
+
+        AddCaseContactResult result = await _listingCaseService.AddCaseContactAsync(id, userId, request);
+        if(result.Status == AddCaseContactStatus.ListingCaseNotFound)
+        {
+            return NotFound(ApiResponse<object>.Fail("Listing case not found."));
+        }
+
+        if(result.Status == AddCaseContactStatus.Success)
+        {
+            return StatusCode(StatusCodes.Status201Created,ApiResponse<CaseContactResponse>.Ok(result.Data!));
+        }
+
+        return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<object>.Fail("Unexpected add case contact status."));
+    }
 }
