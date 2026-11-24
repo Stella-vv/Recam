@@ -13,9 +13,15 @@ public class CaseContactRepository : ICaseContactRepository
         _context = context;
     }
 
-    public async Task<List<CaseContact>> 	GetByListingCaseIdAsync(int listingCaseId)
+    public async Task<List<CaseContact>> GetByListingCaseIdAsync(int listingCaseId)
     {
         List<CaseContact> contacts = await _context.CaseContacts.AsNoTracking().Where(contact => contact.ListingCaseId == listingCaseId).OrderBy(contact => contact.ContactId).ToListAsync();
         return contacts;
+    }
+
+    public async Task AddAsync(CaseContact contact)
+    {
+        _context.CaseContacts.Add(contact);
+        await _context.SaveChangesAsync();
     }
 }

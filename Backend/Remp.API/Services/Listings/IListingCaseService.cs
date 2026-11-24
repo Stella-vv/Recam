@@ -14,4 +14,5 @@ public interface IListingCaseService
     public Task<GetListingCaseDetailsResult> GetListingCaseDetailsAsync(int id, string userId, List<string> roles);
     public Task<GetListingCaseMediaResult> GetListingCaseMediaAsync(int id, string userId, List<string> roles);
     public Task<GetListingCaseContactsResult> GetListingCaseContactsAsync(int id, string userId, List<string> roles);
+    public Task<AddCaseContactResult> AddCaseContactAsync(int listingCaseId, string userId, AddCaseContactRequest request);
 }

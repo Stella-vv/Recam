@@ -422,6 +422,50 @@ public class ListingCaseService : IListingCaseService
         return successResult;
     }
 
+    public async Task<AddCaseContactResult> AddCaseContactAsync(int listingCaseId, string userId, AddCaseContactRequest request)
+    {
+        bool canAccess = await _listingCaseRepository.CanAccessListingCaseAsync(listingCaseId, userId, isPhotographyCompany: false);
+        if (!canAccess)
+        {
+            AddCaseContactResult result = new AddCaseContactResult
+            {
+                Status = AddCaseContactStatus.ListingCaseNotFound,
+                Data = null
+            };
+            return result;
+        }
+
+        CaseContact contact = new CaseContact()
+        {
+            ListingCaseId = listingCaseId,
+            FirstName = request.FirstName,
+            LastName = request.LastName,
+            CompanyName = request.CompanyName,
+            ProfileUrl = request.ProfileUrl,
+            Email = request.Email,
+            PhoneNumber = request.PhoneNumber
+        };
+
+        await _caseContactRepository.AddAsync(contact);
+        CaseContactResponse response = new CaseContactResponse()
+        {
+            ContactId = contact.ContactId,
+            FirstName = contact.FirstName,
+            LastName = contact.LastName,
+            CompanyName = contact.CompanyName,
+            ProfileUrl = contact.ProfileUrl,
+            Email = contact.Email,
+            PhoneNumber = contact.PhoneNumber
+        };
+
+        AddCaseContactResult successResult = new AddCaseContactResult()
+        {
+            Status = AddCaseContactStatus.Success,
+            Data = response
+        };
+        return successResult;
+    }
+
 
 
 
