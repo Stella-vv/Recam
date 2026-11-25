@@ -97,7 +97,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpGet("{id:int}")]
-    public async Task<IActionResult> GetListingCaseDetails(int id)
+    public async Task<IActionResult> GetListingCaseDetails(int id, CancellationToken cancellationToken)
     {
         string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId))
@@ -106,7 +106,7 @@ public class ListingsController : ControllerBase
         }
 
         List<string> roles = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).Distinct().ToList();
-        GetListingCaseDetailsResult result = await _listingCaseService.GetListingCaseDetailsAsync(id, userId, roles);
+        GetListingCaseDetailsResult result = await _listingCaseService.GetListingCaseDetailsAsync(id, userId, roles, cancellationToken);
 
         if(result.Status == GetListingCaseDetailsStatus.Forbidden)
         {
@@ -145,7 +145,7 @@ public class ListingsController : ControllerBase
     }
 
     [HttpGet("{id:int}/media")]
-    public async Task<IActionResult> GetListingCaseMedia(int id)
+    public async Task<IActionResult> GetListingCaseMedia(int id, CancellationToken cancellationToken)
     {
         string? userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrWhiteSpace(userId))
@@ -154,7 +154,7 @@ public class ListingsController : ControllerBase
         }
 
         List<string> roles = User.FindAll(ClaimTypes.Role).Select(claim => claim.Value).Distinct().ToList();
-        GetListingCaseMediaResult result = await _listingCaseService.GetListingCaseMediaAsync(id, userId, roles);
+        GetListingCaseMediaResult result = await _listingCaseService.GetListingCaseMediaAsync(id, userId, roles, cancellationToken);
 
         if(result.Status == GetListingCaseMediaStatus.ListingCaseNotFound)
         {

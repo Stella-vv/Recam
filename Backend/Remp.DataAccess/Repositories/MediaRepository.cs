@@ -30,4 +30,15 @@ public class MediaRepository : IMediaRepository
     {
         return await _context.MediaAssets.Where(media => media.ListingCaseId == listingCaseId && media.IsDeleted == false).ToListAsync();
     }
+
+    public async Task AddAsync(MediaAsset mediaAsset, CancellationToken cancellationToken)
+    {
+        _context.MediaAssets.Add(mediaAsset);
+        await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> ExistsByMediaUrlAsync(string mediaUrl, CancellationToken cancellationToken)
+    {
+        return await _context.MediaAssets.AnyAsync(media => media.MediaUrl == mediaUrl, cancellationToken);
+    }
 }

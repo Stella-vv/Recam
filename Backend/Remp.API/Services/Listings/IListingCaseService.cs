@@ -11,8 +11,8 @@ public interface IListingCaseService
     public Task<UpdateListingCaseResponse?> UpdateAsync(UpdateListingCaseRequest request, int id, string userId);
     public Task<bool> DeleteAsync(int id, string userId);
     public Task<ChangeListingCaseStatusResult> ChangeStatusAsync(ChangeListingCaseStatusRequest request, int id, string userId);
-    public Task<GetListingCaseDetailsResult> GetListingCaseDetailsAsync(int id, string userId, List<string> roles);
-    public Task<GetListingCaseMediaResult> GetListingCaseMediaAsync(int id, string userId, List<string> roles);
+    public Task<GetListingCaseDetailsResult> GetListingCaseDetailsAsync(int id, string userId, List<string> roles, CancellationToken cancellationToken);
+    public Task<GetListingCaseMediaResult> GetListingCaseMediaAsync(int id, string userId, List<string> roles, CancellationToken cancellationToken);
     public Task<GetListingCaseContactsResult> GetListingCaseContactsAsync(int id, string userId, List<string> roles);
     public Task<AddCaseContactResult> AddCaseContactAsync(int listingCaseId, string userId, AddCaseContactRequest request);
 }

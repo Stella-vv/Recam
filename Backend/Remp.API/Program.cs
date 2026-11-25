@@ -15,6 +15,11 @@ using Remp.API.Services.PhotographyCompanies;
 using Remp.API.Services.Media;
 using Remp.API.Services.Listings;
 using Remp.Models.Results;
+using System.ComponentModel;
+using Azure.Storage.Blobs;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
+using Azure.Identity;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -83,6 +88,18 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IRegistrationRepository, RegistrationRepository>();
 builder.Services.AddScoped<ICreateAgentLogRepository, MongoCreateAgentLogRepository>();
 builder.Services.AddScoped<IUpdateAccountPasswordLogRepository, MongoUpdateAccountPasswordLogRepository>();
+builder.Services.Configure<AzureBlobStorageSettings>(builder.Configuration.GetSection("AzureBlobStorage"));
+builder.Services.AddSingleton<BlobServiceClient>(sp =>
+                                                      {
+                                                          var settings = sp.GetRequiredService<IOptions<AzureBlobStorageSettings>>().Value;
+                                                          if (builder.Environment.IsDevelopment() &&
+                                                          settings.ServiceUri == "http://127.0.0.1:10000/devstoreaccount1")
+                                                          {
+                                                                return new BlobServiceClient("UseDevelopmentStorage=true");
+                                                          }
+                                                          return new BlobServiceClient(new Uri(settings.ServiceUri), new DefaultAzureCredential());
+                                                      });
+builder.Services.AddSingleton<IMediaStorage, AzureBlobMediaStorage>();
 
 var app = builder.Build();
 
