@@ -1,5 +1,6 @@
 
 
+using Remp.API.Services.Media;
 using Remp.DataAccess.Repositories;
 using Remp.Models.Entities;
 using Remp.Models.Enums;
@@ -18,14 +19,16 @@ public class ListingCaseService : IListingCaseService
     private readonly ILogger<ListingCaseService> _logger;
     private readonly IMediaRepository _mediaRepository;
     private readonly ICaseContactRepository _caseContactRepository;
+    private readonly IMediaStorage _mediaStorage;
 
-    public ListingCaseService(IListingCaseRepository listingCaseRepository, ICaseHistoryRepository	caseHistoryRepository, ILogger<ListingCaseService> logger, IMediaRepository mediaRepository, ICaseContactRepository caseContactRepository)
+    public ListingCaseService(IListingCaseRepository listingCaseRepository, ICaseHistoryRepository	caseHistoryRepository, ILogger<ListingCaseService> logger, IMediaRepository mediaRepository, ICaseContactRepository caseContactRepository, IMediaStorage mediaStorage)
     {
         _listingCaseRepository = listingCaseRepository;
         _caseHistoryRepository = caseHistoryRepository;
         _logger = logger;
         _mediaRepository = mediaRepository;
         _caseContactRepository = caseContactRepository;
+        _mediaStorage = mediaStorage;
     }
 
     public async Task<CreateListingCaseResponse> CreateAsync(CreateListingCaseRequest request, string userId)
@@ -251,7 +254,7 @@ public class ListingCaseService : IListingCaseService
         return successResult;
     }
 
-    public async Task<GetListingCaseDetailsResult> GetListingCaseDetailsAsync(int id, string userId, List<string> roles)
+    public async Task<GetListingCaseDetailsResult> GetListingCaseDetailsAsync(int id, string userId, List<string> roles, CancellationToken cancellationToken)
     {
         bool isPhotographyCompany = roles.Contains("photographyCompany");
         if (!isPhotographyCompany && !roles.Contains("user"))
@@ -305,6 +308,11 @@ public class ListingCaseService : IListingCaseService
                                                           IsHero = media.IsHero
                                                       }).ToList();
 
+        foreach (var mediaResponse in response.MediaAssets)
+        {
+            mediaResponse.MediaUrl = await ResolveMediaUrlAsync(mediaResponse.MediaUrl, cancellationToken);
+        }
+
         response.Agents = listingCase.AgentListingCases.Select(assignment => assignment.Agent)
                                                        .Where(agent => agent != null && agent.User != null && agent.User.IsDeleted == false)
                                                        .OrderBy(agent => agent!.Id)
@@ -327,7 +335,7 @@ public class ListingCaseService : IListingCaseService
         return successResult;
     }
 
-    public async Task<GetListingCaseMediaResult> GetListingCaseMediaAsync(int id, string userId, List<string> roles)
+    public async Task<GetListingCaseMediaResult> GetListingCaseMediaAsync(int id, string userId, List<string> roles, CancellationToken cancellationToken)
     {
         bool isPhotographyCompany = roles.Contains("photographyCompany");
         if(!isPhotographyCompany && !roles.Contains("user"))
@@ -359,6 +367,11 @@ public class ListingCaseService : IListingCaseService
                                                                                                 IsSelect = media.IsSelect,
                                                                                                 IsHero = media.IsHero
                                                                                              }).ToList();
+
+        foreach (var mediaResponse in mediaResponses)
+        {
+            mediaResponse.MediaUrl = await ResolveMediaUrlAsync(mediaResponse.MediaUrl, cancellationToken);
+        }
 
         GetListingCaseMediaResponse response = new GetListingCaseMediaResponse()
         {
@@ -464,6 +477,15 @@ public class ListingCaseService : IListingCaseService
             Data = response
         };
         return successResult;
+    }
+
+    private async Task<string> ResolveMediaUrlAsync(string mediaUrl, CancellationToken cancellationToken){
+        if(Uri.TryCreate(mediaUrl, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+        {
+            return mediaUrl;
+        }
+        var readUri = await _mediaStorage.GetReadUrlAsync(mediaUrl, cancellationToken);
+        return readUri.AbsoluteUri;
     }
 
 
